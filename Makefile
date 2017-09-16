@@ -18,10 +18,9 @@ DEFINES  += $(CDEFINES)
 export CFLAGS
 
 ### PKG-Config Libs
-DEPENDENCIES = libcurl
+DEPENDENCIES = fuse libcurl
 
 ### Libraries and compiler options
-LIBS += -lpthread
 LIBS += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --libs $(dependence)) )
 INCLUDES += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --cflags $(dependence)) )
 
