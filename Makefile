@@ -17,11 +17,12 @@ CDEFINES  = -D_GNU_SOURCE
 DEFINES  += $(CDEFINES)
 export CFLAGS
 
-### Dependencies
-#DEPENDENCIES = openssl zlib
+### PKG-Config Libs
+DEPENDENCIES = libcurl
 
 ### Libraries and compiler options
-LIBS = $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --libs $(dependence)) )
+LIBS += -lpthread
+LIBS += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --libs $(dependence)) )
 INCLUDES += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --cflags $(dependence)) )
 
 ### Includes and Defines
