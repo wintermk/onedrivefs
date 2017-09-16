@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# OneDriveFS specific
+nbproject/
+.dependencies
+mount.onedrivefs
+
