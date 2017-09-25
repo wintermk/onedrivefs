@@ -16,36 +16,28 @@
  */
 
 /* 
- * File:   main.c
+ * File:   logging.c
  * Author: Karl Wintermann
- *
- * Created on 16. September 2017, 21:02
- */
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <curl/curl.h>
-#include "auth.h"
-#include "config.h"
-#include "logging.h"
-
-
-
-/*
  * 
+ * Created on 23. September 2017, 10:55
  */
-int main(int argc, char** argv) {
+
+#include "logging.h"
+#include "config.h"
 
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    auth_init("/home/karl/.OneDriveFS");
-    
-    get_access_token();
-    
-    auth_cleanup();
-    curl_global_cleanup();
-    return (EXIT_SUCCESS);
+void lprintf(int level, const char *format, ...) {
+   
+#ifndef DEBUG
+    if(level > LOG_WARNING)
+        return;
+    openlog(PNAME, LOG_CONS, LOG_USER);
+#else
+    openlog(PNAME, LOG_CONS | LOG_PERROR, LOG_USER);
+#endif
+    va_list arg_ptr;
+    va_start(arg_ptr, format);
+    vsyslog(level, format, arg_ptr);
+    va_end(arg_ptr);
+    closelog();
 }
-

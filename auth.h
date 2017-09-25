@@ -16,36 +16,21 @@
  */
 
 /* 
- * File:   main.c
+ * File:   auth.h
  * Author: Karl Wintermann
  *
- * Created on 16. September 2017, 21:02
+ * Created on 17. September 2017, 12:23
  */
 
+#ifndef AUTH_H
+#define AUTH_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <curl/curl.h>
-#include "auth.h"
-#include "config.h"
-#include "logging.h"
+void auth_init(char *token_dir);
+void auth_cleanup();
 
+int auth(char *redirect_uri_str);
 
-
-/*
- * 
- */
-int main(int argc, char** argv) {
+char *get_access_token();
 
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    auth_init("/home/karl/.OneDriveFS");
-    
-    get_access_token();
-    
-    auth_cleanup();
-    curl_global_cleanup();
-    return (EXIT_SUCCESS);
-}
-
+#endif /* AUTH_H */

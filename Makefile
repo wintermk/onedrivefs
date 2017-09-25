@@ -4,6 +4,7 @@
 
 ### Name
 NAME = OneDriveFS
+VERSION = 0.0.1
 
 ### Directories
 PREFIX = /usr/local
@@ -18,15 +19,18 @@ DEFINES  += $(CDEFINES)
 export CFLAGS
 
 ### PKG-Config Libs
-DEPENDENCIES = fuse libcurl
+DEPENDENCIES = json-c fuse libcurl
 
 ### Libraries and compiler options
 LIBS += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --libs $(dependence)) )
 INCLUDES += $(foreach dependence, $(DEPENDENCIES), $(shell pkg-config --cflags $(dependence)) )
 
 ### Includes and Defines
-#DEFINES +=
+DEFINES += -DPNAME=\"$(NAME)\" -DPVERSION=\"$(VERSION)\"
 #INCLUDES +=
+
+### Debug
+DEFINES += -DDEBUG
 
 ### Binary
 BINARY = mount.$(shell echo $(NAME) | tr '[:upper:]' '[:lower:]')
