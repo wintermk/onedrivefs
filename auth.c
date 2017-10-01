@@ -25,13 +25,13 @@
 #include "auth.h"
 #include "config.h"
 #include "logging.h"
+#include "tools.h"
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-#include <curl/curl.h>
 #include <json-c/json.h>
 
 typedef struct token_s {
@@ -43,31 +43,6 @@ typedef struct token_s {
     time_t created;
     int64_t expires_in;   
 } token_t;
-
-typedef struct memory_s {
-    char *memory;
-    size_t size;
-} memory_t;
-
-static size_t
-WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-  size_t realsize = size * nmemb;
-  memory_t *mem = (memory_t *)userp;
- 
-  mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-  if(mem->memory == NULL) {
-    /* out of memory! */ 
-    lprintf(LOG_ERR, "WriteMemoryCallback() => Not enough memory!"); 
-    return 0;
-  }
- 
-  memcpy(&(mem->memory[mem->size]), contents, realsize);
-  mem->size += realsize;
-  mem->memory[mem->size] = 0;
- 
-  return realsize;
-}
 
 char tokenFile[PATH_MAX] = { 0 };
 
@@ -201,6 +176,16 @@ int load_token() {
 }
 
 int auth(char *redirect_uri_str) {
+    
+    memory_t mem;
+    mem.memory = malloc(1);
+    mem.size = 0;
+    
+    if(mem.memory == NULL) {
+        lprintf(LOG_ERR, "auth() => Out of memory!");
+        return 0;
+    }
+    
     if(redirect_uri_str == NULL) {
         lprintf(LOG_ERR, "auth() =>  Redirect uri pointer is NULL!");
         return 0;
@@ -279,16 +264,12 @@ int auth(char *redirect_uri_str) {
     strcat(postfields, "&redirect_uri=");
     strcat(postfields, token.redirect_uri_str);
     strcat(postfields, "&grant_type=" GRANT_TYPE_AUTH);
-    
-    memory_t mem;
-    mem.memory = malloc(1);
-    mem.size = 0;
-    
+        
     token.created = time(NULL);
     
     curl_easy_setopt(curl, CURLOPT_URL, TOKEN_URI);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&mem);
     CURLcode res = curl_easy_perform(curl);
     free(postfields);
@@ -305,6 +286,7 @@ int auth(char *redirect_uri_str) {
     struct json_object *answ_jobj, *err_jobj;
     
     answ_jobj = json_tokener_parse_verbose(mem.memory, &jerr);
+    free(mem.memory);
     
     if(answ_jobj == NULL) {
         lprintf(LOG_ERR, "auth() => JSON parse error!\n"
@@ -380,6 +362,16 @@ int auth(char *redirect_uri_str) {
 }
 
 int refresh_token() {
+    memory_t mem;
+    mem.memory = malloc(1);
+    mem.size = 0;
+    
+    if(mem.memory == NULL) {
+        lprintf(LOG_ERR, "refresh_token() => Out of memory!");
+        return 0;
+    }
+    
+    
     if(token_initialized(token)) {
        lprintf(LOG_ERR, "refresh_token() => Invalid token!");
        return 0;
@@ -409,15 +401,11 @@ int refresh_token() {
     strcat(postfields, token.redirect_uri_str);
     strcat(postfields, "&grant_type=" GRANT_TYPE_REFRESH);
     
-    memory_t mem;
-    mem.memory = malloc(1);
-    mem.size = 0;
-    
     time_t created = time(NULL);
     CURL *curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_URL, TOKEN_URI);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&mem);
     CURLcode res = curl_easy_perform(curl);
     free(postfields);
@@ -435,6 +423,7 @@ int refresh_token() {
     struct json_object *answ_jobj, *err_jobj;
     
     answ_jobj = json_tokener_parse_verbose(mem.memory, &jerr);
+    free(mem.memory);
     
     if(answ_jobj == NULL) {
         lprintf(LOG_ERR, "refresh_token() => JSON parse error!\n"
@@ -538,4 +527,29 @@ char *get_access_token() {
         return token.access_token_str;
     }
     return NULL;
+}
+
+struct curl_slist *append_access_token(struct curl_slist *list) {
+    char *access_token = get_access_token();
+    if(access_token == NULL) {
+        return NULL;
+    }
+    
+    char *auth_header = malloc((strlen("Authorization: bearer ") + strlen(access_token) + 1) * sizeof(char));
+    
+    if(auth_header == NULL) {
+        lprintf(LOG_ERR, "append_access_token() => Not enough memory!");
+        return NULL;
+    }
+    
+    strcpy(auth_header, "Authorization: bearer ");
+    strcat(auth_header, access_token);
+    
+    list = curl_slist_append(list, auth_header);
+    free(auth_header);
+    if(list == NULL) {
+        lprintf(LOG_ERR, "append_access_token() => Can't append auth_header to list!");
+        return NULL;
+    }
+    return list;
 }

@@ -25,7 +25,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-
+/* Auth */
 #define CLIENT_ID               "bfdf0d2d-24ec-44f3-9063-ef993e0e7153"
 #define REDIRECT_URI_APP        "msalbfdf0d2d-24ec-44f3-9063-ef993e0e7153%3A%2F%2Fodfs%2Fauth"
 #define REDIRECT_URI_BROWSER    "https%3A%2F%2Flogin.microsoftonline.com%2Fcommon%2Foauth2%2Fnativeclient"
@@ -43,7 +43,10 @@
 
 #define REFRESH_BUFFER          60
 
+/* OneDrive API */
 
+#define API_URI "https://graph.microsoft.com/v1.0"
+#define DRIVES "/me/drives"
 
 
 

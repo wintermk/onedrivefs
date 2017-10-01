@@ -25,5 +25,6 @@
 #ifndef ONEDRIVE_H
 #define ONEDRIVE_H
 
+void print_drives();
 
 #endif /* ONEDRIVE_H */

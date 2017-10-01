@@ -16,37 +16,31 @@
  */
 
 /* 
- * File:   main.c
+ * File:   tools.c
  * Author: Karl Wintermann
- *
- * Created on 16. September 2017, 21:02
+ * 
+ * Created on 30. September 2017, 11:08
  */
 
-
-#include <stdio.h>
+#include "tools.h"
+#include "logging.h"
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
-#include "auth.h"
-#include "config.h"
-#include "logging.h"
-#include "onedrive.h"
 
-
-
-/*
- * 
- */
-int main(int argc, char** argv) {
-
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    auth_init("/home/karl/.OneDriveFS");
-    
-    print_drives();
-    
-    auth_cleanup();
-    curl_global_cleanup();
-    return (EXIT_SUCCESS);
+size_t write_memory(void *contents, size_t size, size_t nmemb, void *userp) {
+  size_t realsize = size * nmemb;
+  memory_t *mem = (memory_t *)userp;
+ 
+  mem->memory = realloc(mem->memory, mem->size + realsize + 1);
+  if(mem->memory == NULL) {
+    /* out of memory! */ 
+    lprintf(LOG_ERR, "WriteMemoryCallback() => Not enough memory!"); 
+    return 0;
+  }
+ 
+  memcpy(&(mem->memory[mem->size]), contents, realsize);
+  mem->size += realsize;
+  mem->memory[mem->size] = 0;
+ 
+  return realsize;
 }
-

@@ -25,6 +25,8 @@
 #ifndef AUTH_H
 #define AUTH_H
 
+#include <curl/curl.h>
+
 void auth_init(char *token_dir);
 void auth_cleanup();
 
@@ -32,5 +34,6 @@ int auth(char *redirect_uri_str);
 
 char *get_access_token();
 
+struct curl_slist *append_access_token(struct curl_slist *list);
 
 #endif /* AUTH_H */

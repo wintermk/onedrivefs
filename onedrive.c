@@ -23,5 +23,125 @@
  */
 
 #include "onedrive.h"
+#include "config.h"
 #include "auth.h"
+#include "tools.h"
+#include "logging.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <curl/curl.h>
+#include <json-c/json.h>
 
+
+int onedrive_error(const char *method, struct json_object *answ_jobj) {
+    struct json_object *err_jobj;
+    if(json_object_object_get_ex(answ_jobj, "error", &err_jobj)) {       
+        struct json_object *err_code_jobj, *err_message_jobj;
+        if(json_object_object_get_ex(err_jobj, "code", &err_code_jobj) 
+                && json_object_object_get_ex(err_jobj, "message", &err_message_jobj)) {
+            lprintf(LOG_ERR, "%s => OneDrive Error\n"
+                             "Error code: %s\n"
+                             "Error message: %s",
+                                method,
+                                json_object_get_string(err_code_jobj),
+                                json_object_get_string(err_message_jobj));
+            
+        } else {
+            lprintf(LOG_ERR, "%s => OneDrive Error\n%s", method,
+                    json_object_get_string(err_jobj));
+        }
+        return 1;
+    }
+    return 0;
+}
+
+void print_drives() {
+    
+    memory_t mem;
+    mem.memory = malloc(1);
+    mem.size = 0;
+    
+    if(mem.memory == NULL) {
+        lprintf(LOG_ERR, "print_drives() => Out of memory!");
+        return;
+    }
+    
+    CURL *curl = curl_easy_init();
+    if(curl == NULL) {
+        lprintf(LOG_ERR, "print_drives() => Can't initialize curl!");
+        return;
+    }
+       
+    struct curl_slist *list = NULL;
+    list = append_access_token(list);
+    
+    if(list == NULL) {
+        curl_easy_cleanup(curl);
+        return;
+    }
+    
+    curl_easy_setopt(curl, CURLOPT_URL, API_URI DRIVES);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&mem);
+    CURLcode res = curl_easy_perform(curl);
+    curl_slist_free_all(list);
+    curl_easy_cleanup(curl);
+    
+    if(res != CURLE_OK) { 
+        lprintf(LOG_ERR, "print_drives() => Curl perfom error %d\n", res);
+        return;
+    }
+    
+    lprintf(LOG_DEBUG, "print_drives() => JSON string: %s", mem.memory);
+    
+    enum json_tokener_error jerr;
+    struct json_object *answ_jobj;
+    
+    answ_jobj = json_tokener_parse_verbose(mem.memory, &jerr);
+    free(mem.memory);
+    
+    if(answ_jobj == NULL) {
+        lprintf(LOG_ERR, "print_drives() => JSON parse error!\n"
+                         "Error description: %s\n", json_tokener_error_desc(jerr));
+        return;
+    }
+    
+    if(onedrive_error("print_drives()", answ_jobj)) {
+        return;
+    }
+    
+    struct json_object *value_jobj, *array_value, *id_jobj, *driveType_jobj, *owner_jobj, 
+            *user_jobj, *displayName_jobj, *userId_jobj;
+    
+    if(json_object_object_get_ex(answ_jobj, "value", &value_jobj)) {
+        for(int i=0; i<json_object_array_length(value_jobj); i++) {
+            array_value = json_object_array_get_idx(value_jobj, i);
+            if(array_value != NULL) {
+                printf("Drive %d:\n", i+1);
+                if(json_object_object_get_ex(array_value, "id", &id_jobj)) {
+                    printf("  Drive id: %s\n", json_object_get_string(id_jobj));
+                }
+                if(json_object_object_get_ex(array_value, "driveType", &driveType_jobj)) {
+                    printf("  Drive type: %s\n", json_object_get_string(driveType_jobj));
+                }
+                if(json_object_object_get_ex(array_value, "owner", &owner_jobj)) {
+                    if(json_object_object_get_ex(owner_jobj, "user", &user_jobj)) {
+                        printf("  Owner:\n");
+                        if(json_object_object_get_ex(user_jobj, "displayName", &displayName_jobj)) {
+                            printf("    User: %s\n", json_object_get_string(displayName_jobj));
+                        }
+                        if(json_object_object_get_ex(user_jobj, "id", &userId_jobj)) {
+                            printf("    User id: %s\n", json_object_get_string(userId_jobj));
+                        }
+                    }
+                }
+                printf("\n");
+            }  
+        }
+        
+    } else {
+        printf("No drives were found!\n");
+    } 
+}
