@@ -48,7 +48,9 @@
 #define API_URI "https://graph.microsoft.com/v1.0"
 #define DRIVES "/me/drives"
 
-
+#ifndef UNIT_PREFIX
+#define UNIT_PREFIX 1
+#endif
 
 #endif /* CONFIG_H */
 

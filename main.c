@@ -25,12 +25,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#include <locale.h>
 #include <curl/curl.h>
 #include "auth.h"
 #include "config.h"
 #include "logging.h"
 #include "onedrive.h"
+#include "tools.h"
 
 
 
@@ -47,6 +50,7 @@ int main(int argc, char** argv) {
     
     auth_cleanup();
     curl_global_cleanup();
+    
     return (EXIT_SUCCESS);
 }
 

@@ -26,6 +26,7 @@
 #define TOOLS_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct memory_s {
     char *memory;
@@ -33,5 +34,7 @@ typedef struct memory_s {
 } memory_t;
 
 size_t write_memory(void *contents, size_t size, size_t nmemb, void *userp);
+
+char *byte_converter(int64_t bytes, int iec_prefix);
 
 #endif /* TOOLS_H */

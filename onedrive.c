@@ -29,6 +29,7 @@
 #include "logging.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <curl/curl.h>
 #include <json-c/json.h>
@@ -112,8 +113,9 @@ void print_drives() {
         return;
     }
     
-    struct json_object *value_jobj, *array_value, *id_jobj, *driveType_jobj, *owner_jobj, 
-            *user_jobj, *displayName_jobj, *userId_jobj;
+    struct json_object *value_jobj, *array_value, *id_jobj, *driveType_jobj, 
+            *owner_jobj, *user_jobj, *displayName_jobj, *userId_jobj,
+            *quota_jobj, *deleted_jobj, *remaining_jobj, *state_jobj, *total_jobj, *used_jobj;
     
     if(json_object_object_get_ex(answ_jobj, "value", &value_jobj)) {
         for(int i=0; i<json_object_array_length(value_jobj); i++) {
@@ -135,6 +137,28 @@ void print_drives() {
                         if(json_object_object_get_ex(user_jobj, "id", &userId_jobj)) {
                             printf("    User id: %s\n", json_object_get_string(userId_jobj));
                         }
+                    }
+                }
+                if(json_object_object_get_ex(array_value, "quota", &quota_jobj)) {
+                    printf("  Quota:\n");
+                    if(json_object_object_get_ex(quota_jobj, "state", &state_jobj)) {
+                        printf("    State: %s\n", json_object_get_string(state_jobj));
+                    }
+                    if(json_object_object_get_ex(quota_jobj, "total", &total_jobj)) {
+                        int64_t total = json_object_get_int64(total_jobj);
+                        printf("    Total: %s (%ld B)\n", byte_converter(total, UNIT_PREFIX), total);
+                    }
+                    if(json_object_object_get_ex(quota_jobj, "used", &used_jobj)) {
+                        int64_t used = json_object_get_int64(used_jobj);
+                        printf("    Used: %s (%ld B)\n", byte_converter(used, UNIT_PREFIX), used);
+                    }
+                    if(json_object_object_get_ex(quota_jobj, "remaining", &remaining_jobj)) {
+                        int64_t remaining = json_object_get_int64(remaining_jobj);
+                        printf("    Free: %s (%ld B)\n", byte_converter(remaining, UNIT_PREFIX), remaining);
+                    }
+                    if(json_object_object_get_ex(quota_jobj, "deleted", &deleted_jobj)) {
+                        int64_t deleted = json_object_get_int64(deleted_jobj);
+                        printf("    Deleted: %s (%ld B)\n", byte_converter(deleted, UNIT_PREFIX), deleted);
                     }
                 }
                 printf("\n");
